@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Identification</title>
+</head>
+<body>
+    <!--  Access to API     -->
+    <!--   https://bugcatcher.coe.revaturelabs.com/29docs    -->
+
+    <h1> Please log in </h1>
+    <p>
+        <label> User : </label>
+        <input type="text" id="username"  placeholder="username"> <!--min="1" max="151"-->
+        <label> Password : </label>
+        <input type="password" id="password" placeholder="password">
+        
+    </p>
+    <P>
+       <!--  <input type="button" id="send" onClick="login()"  value="Log in">  --> 
+       <!--  <button onclick="login()">login</button>    -->
+       <button id="send"  onclick="login()">Log in</button> 
+
+    </P>
+</body>
+<script>
+
+async function login(){
+        // to let my api validate login information I need to attach the username and password to the http request
+        let loginInfo = {
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value
+        }
+
+        // now that I have the login information I need to convert it into a JSON
+        let loginJSON = JSON.stringify(loginInfo);
+
+        // <!--   https://github.com/EricTrainingRev/220531-JWA/blob/main/Study-Guides/Week3.md  -->
+        // now I can set up my HTTP request configurations
+        let config = {
+            method:"PATCH", // method is a reference to the kind of request you are making (the verb): GET is the default
+            headers:{'Content-Type':"application/json"}, // some APIs will return an error message without this value included
+            body: loginJSON
+        }
+   
+        let httpResponse = await fetch("https://bugcatcher.coe.revaturelabs.com/29/login",config); // make sure to enter the url assigned to you
+
+        if(httpResponse.status === 200){ // 200 basically means request made successfully
+            let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+            
+            sessionStorage.setItem("username",loginInfo.username);
+            sessionStorage.setItem("password",loginInfo.password);
+
+            if(responseBody.role === "Tester"){
+                //let sessionStorage = localStorage.setItem("number",input.value);
+                window.location.href = "TestersHomePage.html"; //Viet2 / Viet2
+            } else {
+                window.location.href = "ManagersHomePage.html"; // Eric2/123  Eric1/123
+            }
+        } else {
+            let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+            alert(responseBody.detail);
+        }
+
+    }
+
+//function TransferToPage2(){
+//    localStorage.setItem("number",input.value);
+//    alert(input.value);
+//    sessionStorage.setItem("sessionNum",sessionInput.value);
+//    alert(sessionInput.value);
+//    window.location.href="subfolder\\page-two.html" //<!--subfolder\\page-two.html-->
+//}
+
+</script>
+</html>

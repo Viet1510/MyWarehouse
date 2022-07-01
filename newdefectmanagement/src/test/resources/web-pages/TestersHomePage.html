@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<head>
+    <title> Tester Page</title>
+</head>
+<body>
+    <h1> Manage your different testing project </h1>
+    <table border="solid 5px ">
+        <thead>
+            <tr>
+                <th> Defect ID</th>
+                <th> Project Name</th>
+                <th> Current status </th>
+                <th> Update your status</th>
+            </tr>
+        </thead>
+        <tbody id = "DefectsList">
+           
+        </tbody>
+    </table>
+</body>
+<script>
+
+
+
+async function btnUpdate(btnNum,idDefect){
+        let statusUpdated= document.getElementById("idSelect" + btnNum );
+        let SelectChoice=statusUpdated.options[statusUpdated.selectedIndex].value;
+
+        let loginInfo = {
+            status : SelectChoice
+        }
+
+        // now that I have the login information I need to convert it into a JSON
+        let loginJSON = JSON.stringify(loginInfo);
+
+        let config = {
+            method:"PATCH", // method is a reference to the kind of request you are making (the verb): GET is the default
+            headers:{'Content-Type':"application/json"}, // some APIs will return an error message without this value included
+            body: loginJSON
+        }
+        let urlUpdate="https://bugcatcher.coe.revaturelabs.com/29/defects/"+idDefect;
+            //let httpResponse = await fetch("https://bugcatcher.coe.revaturelabs.com/29/defects/99051",config); // make sure to enter the url assigned to you
+        let httpResponse = await fetch(urlUpdate,config); // make sure to enter the url assigned to you
+        console.log(httpResponse.status);
+        if(httpResponse.status === 204){ // 204 basically means request made successfully
+
+                // I update the "current status"  column and update the selection list
+            let statusLine= document.getElementById("Status"+btnNum);
+            let PreviousStatus = statusLine.textContent;
+            statusLine.textContent = SelectChoice;
+            statusUpdated.options[statusUpdated.selectedIndex].value = PreviousStatus;
+            statusUpdated.options[statusUpdated.selectedIndex].textContent = PreviousStatus;
+                //console.log(responseBody);
+        }
+        else {
+            let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+            alert(responseBody.detail);
+        }
+
+    }
+
+    let username = sessionStorage.getItem("username");
+    let password = sessionStorage.getItem("password");
+    //console.log(username +"  " + password);
+
+    // this function is called by script section itself
+    async function ListDefectsUser(){
+    //    console.log("Function beginning");
+            let config = {
+                    method:"GET", // method is a reference to the kind of request you are making (the verb): GET is the default
+                    headers:{'Content-Type':"application/json"}, // some APIs will return an error message without this value included
+                   // body: ""
+                }
+
+            let httpResponse = await fetch("https://bugcatcher.coe.revaturelabs.com/29/defects",config); // make sure to enter the url assigned to you
+            //let httpResponse = fetch("https://bugcatcher.coe.revaturelabs.com/29/defects",config); // make sure to enter the url assigned to you
+            console.log(httpResponse.status);
+            if(httpResponse.status === 200){ // 201 basically means request made successfully
+               let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+             //  let responseBody =  httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+                console.log(responseBody);
+                let DefectsList = document.getElementById("DefectsList");
+                let statusObj={   // Allow me to check which status is removed when egal 0
+                    Pending:1,
+                    Accepted:1,
+                    Declined:1,
+                    Rejected :1,
+                    Fixed : 1,
+                    Shelved : 1
+                }
+
+                let count=0;
+                for (let ObjReturn of responseBody ){
+                    if (username === ObjReturn.assignedTo) {
+                        count++; // counter of the defect for this user
+                        // Create this ligne TR and different TD (Defect Id ,Description , Current status, Update status)
+                        let TrElement = document.createElement("tr");
+                        let defectElement = document.createElement("td"); // for Defect Id
+                        defectElement.id=ObjReturn.defectId;
+                        defectElement.textContent=ObjReturn.defectId;
+                        TrElement.appendChild(defectElement);
+
+                        let descElement = document.createElement("td"); // for Desc
+                        descElement.textContent=ObjReturn.desc;
+                        TrElement.appendChild(descElement);
+
+                        let statusElement = document.createElement("td"); // for status
+                        statusElement.textContent=ObjReturn.status;
+                        statusElement.id = "Status"+count;
+                        statusObj[ObjReturn.status] = 0; // update status in object
+                        TrElement.appendChild(statusElement);
+
+                        let UpdateElement = document.createElement("td"); // for status
+                        let SelectStatus = document.createElement("select"); // for adding select                    
+                        
+                        SelectStatus.id= "idSelect"+count;
+                        //SelectStatus.tagName="defect"+count;
+                        SelectStatus.name="defect"+count;
+                        for (const val in statusObj)
+                        {
+                            if (statusObj[val] !== 0){     
+                                let option = document.createElement("option");
+                                option.value = val; 
+                                option.text = val;
+                                SelectStatus.appendChild(option);
+
+                            }
+                        }
+                        statusObj[ObjReturn.status] = 1;  // give back the status in the statusObject
+
+                        UpdateElement.appendChild(SelectStatus); // add select element to "TD"  element
+                        //TrElement.appendChild(UpdateElement);
+
+                        let BtnElement = document.createElement("button"); // for button update
+                        BtnElement.value= "UPDATE"+count;
+                        BtnElement.textContent ="UPDATE"+count;
+                        //BtnElement.addEventListener("click",mouseMoveOver);
+                        BtnElement.setAttribute('onclick',`btnUpdate(${count},${ObjReturn.defectId})`);  // ${count}
+                        //BtnElement.onclick = "btnUpdate()";         //`UPDATE(${count})`;
+                        BtnElement.id ="Updatedefect"+count;
+                        UpdateElement.appendChild(BtnElement);
+                        TrElement.appendChild(UpdateElement);    // add "TD"  element to TR element
+                        DefectsList.appendChild(TrElement);
+
+
+
+
+                        console.log(ObjReturn.assignedTo);
+                    }
+
+                }
+
+                // get all defects 
+                //  https://bugcatcher.coe.revaturelabs.com/29/defects
+
+            }
+            else {
+                let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+//                let responseBody = httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+                alert(responseBody.detail);
+
+            }
+
+    }  
+
+
+     ListDefectsUser();
+</script>

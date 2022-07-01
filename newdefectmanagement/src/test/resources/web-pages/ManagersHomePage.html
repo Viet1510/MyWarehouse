@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<head>
+    <title>Manager Page</title>
+</head>
+<body>
+    <h1> Assign the defect to tester </h1>
+    <p id = "saveInfo" hidden> </p>
+    <table>
+        <tr>
+            <td>Enter your title defect :</td>       
+            <td ><input  id="AssignedTitle" type="text" name="title" > </td><!--min="1" max="151"-->
+
+        </tr>
+        <tr>
+            <td> Select tester : </td> 
+            <td   id="AddSelect">
+                <select id = "testerSelected">
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <button  onclick="AssignTo()" id="assign"  >Assign</button> 
+                <!-- <input type="button" onclick="AssignTo()" id="assign" value="Log in" >   --> 
+            </td>
+        </tr>
+    </table>
+
+    
+<h4> Yours requests :</h4>
+<table  border="solid 5px ">
+    <thead>
+        <th>  Defect number </th><th>  Username </th><th> Status</th><th> Description </th>
+    </thead>
+    <tbody id="response">
+
+    </tbody>
+</div>
+
+</body>
+<script>
+
+
+//=================================================
+//  FUNCTION   :     AddSelect()
+//  for when loading page; this function asks API to load all testers in list of select 
+// =================================================
+async function AddSelect(){
+        let config = {
+                    method:"GET", // method is a reference to the kind of request you are making (the verb): GET is the default
+                    headers:{'Content-Type':"application/json"}, // some APIs will return an error message without this value included
+                   // body: ""
+                }
+
+            let httpResponse = await fetch("https://bugcatcher.coe.revaturelabs.com/29/employees",config); // make sure to enter the url assigned to you
+            console.log(httpResponse.status);
+            if(httpResponse.status === 200){ // 201 basically means request made successfully
+               let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+                console.log(responseBody);
+
+                let SelectElts = document.getElementById("testerSelected");          //createElement("td"); // for status
+                for (let ObjReturn of responseBody ){
+                    if ( ObjReturn.role === "Tester") {
+                        let OptionElts = "USERNAME: "+ ObjReturn.username + ",   FNAME: " + ObjReturn.fname +",   LNAME: " + ObjReturn.lname;
+                        //let OptionElts = "FNAME: " + ObjReturn.fname +",   LNAME: " + ObjReturn.lname;
+                        let option = document.createElement("option");
+                                
+                        option.value = ObjReturn.username; 
+                        option.text = OptionElts;
+                        SelectElts.appendChild(option);
+
+                    }
+                }
+
+            }
+
+            else{
+                let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+                alert(responseBody.detail);
+
+            }
+
+    }
+        
+//===================================
+//  CALL FUNCTION   :     AddSelect()
+//  for when loading page; this function asks API to load all testers in list of select 
+AddSelect();
+//
+//===================================
+
+
+
+// ==========================
+// New Function
+//  Below function called by the button "Assign" to affect a defect to un tester
+// ==========================
+    async function AssignTo(){
+
+        testerSelected=document.getElementById("testerSelected");
+        AssignedTitle=document.getElementById("AssignedTitle");
+        //console.log(testerSelected.value);
+        
+        let  AssigmentObj =  {
+          "assignedTo": testerSelected.value,
+          "dateReported": 0,
+          "desc": AssignedTitle.value,
+          "stepsToReproduce": "What ?",
+          "severity": "Low",
+          "priority": "Low"
+         }
+        AssignmentJson=JSON.stringify(AssigmentObj);
+        let config = {
+            method:"POST", // method is a reference to the kind of request you are making (the verb): GET is the default
+            headers:{'Content-Type':"application/json"}, // some APIs will return an error message without this value included
+            body: AssignmentJson
+        }
+
+        let httpResponse = await fetch("https://bugcatcher.coe.revaturelabs.com/29/defects",config); // make sure to enter the url assigned to you
+
+        if(httpResponse.status === 201){ // 201 basically means request made successfully
+            let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+            let saveInfo= responseBody.defectId +","+responseBody.assignedTo+","+responseBody.status+","+responseBody.desc;
+            if (saveInfo !== ""){
+                let ParagraphSave=document.getElementById("saveInfo");        
+                ParagraphSave.textContent=saveInfo;
+            }   
+            TableEelement= document.getElementById("response");
+            TrElement = document.createElement("tr");
+            TdElement1 = document.createElement("td");
+            TdElement1.textContent = responseBody.defectId;
+            TrElement.appendChild(TdElement1);
+            TdElement2 = document.createElement("td");
+            TdElement2.textContent = responseBody.assignedTo;
+            TrElement.appendChild(TdElement2);
+            TdElement3 = document.createElement("td");
+            TdElement3.textContent = responseBody.status;
+            TrElement.appendChild(TdElement3);
+            TdElement4 = document.createElement("td");
+            TdElement4.textContent = responseBody.desc;
+            TrElement.appendChild(TdElement4);
+            TableEelement.appendChild(TrElement);
+        }
+        else {
+            let responseBody = await httpResponse.json(); // remember, json() returns a promise, so we use await to get the data we want out of it
+            alert(responseBody.detail);
+
+        }
+
+
+
+    }
+
+</script>
